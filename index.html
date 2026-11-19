@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>돌보미 전산 실습</title>
+<style>
+:root{--purple:#8e70a5;--purple-dark:#795b91;--line:#e7e3e9;--muted:#777;--bg:#f4f3f5}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);font-family:"Malgun Gothic","Apple SD Gothic Neo",Arial,sans-serif;color:#333}
+.top{height:48px;background:#fff;border-bottom:1px solid #ddd;display:flex;align-items:center;justify-content:space-between;padding:0 18px;font-size:12px;color:#555}
+.top .hamb{font-size:25px;color:#927ba0;line-height:1}
+.wrap{max-width:760px;margin:18px auto;padding:0 14px 36px}
+.brand{font-size:22px;font-weight:700;margin:8px 4px 16px}
+.card{background:white;border-radius:15px;box-shadow:0 2px 9px #00000016;margin-bottom:15px;padding:17px 16px}
+h2{font-size:16px;margin:0 0 15px;font-weight:700}
+.plan-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.plan-head .place{font-size:14px;color:#555}
+.small-btn{border:1px solid #cfc7d4;background:#fff;color:#8b7598;border-radius:4px;padding:5px 10px;font-size:12px;cursor:pointer}
+table{width:100%;border-collapse:collapse;font-size:14px;table-layout:fixed}
+th{width:27%;background:var(--purple);color:#fff;font-weight:500;text-align:center;padding:11px 5px;border-bottom:1px solid #fff}
+td{padding:11px 10px;border-bottom:1px solid #eee;background:#fff;word-break:keep-all}
+.status{font-weight:600}
+.status-cell{display:flex;align-items:center;gap:10px;min-height:40px}
+.status-action{padding:6px 14px;font-size:12px}
+.status.wait{color:#777}.status.go{color:#287c52}.status.done{color:#795b91}
+.action-row{display:flex;justify-content:center;gap:8px;padding:13px 0 5px}
+.primary{background:var(--purple);border:0;color:#fff;padding:9px 20px;border-radius:4px;font-weight:700;cursor:pointer}
+.primary:hover{background:var(--purple-dark)}
+.primary:disabled{opacity:.45;cursor:not-allowed}
+.timebar{background:var(--purple);color:#fff;text-align:center;padding:10px;font-weight:600;font-size:14px;border-radius:5px 5px 0 0;margin-top:4px}
+.timebox{display:flex;align-items:center;justify-content:center;gap:10px;background:#f5dfe1;padding:12px;border-radius:0 0 5px 5px;font-size:13px}
+.timebox span{background:#fff;border:1px solid #eee;padding:8px 10px;border-radius:6px}
+.note{font-size:12px;color:#888;margin:10px 2px 0}
+.detail-card{display:none}
+.detail-card.show{display:block}
+.field{margin:0 0 13px}
+.field label{display:block;font-size:13px;margin-bottom:6px;font-weight:600}
+.field select,.field input,.field textarea{width:100%;border:1px solid #ddd;border-radius:5px;padding:10px;font:14px inherit;background:#fff;color:#444}
+.field textarea{min-height:115px;resize:vertical;line-height:1.5}
+.row-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.actions{display:flex;justify-content:center;gap:10px;margin-top:18px}
+.secondary{background:#fff;border:1px solid #cfc7d4;color:#8b7598;padding:9px 20px;border-radius:4px;cursor:pointer}
+.toast{display:none;position:fixed;left:50%;bottom:25px;transform:translateX(-50%);background:#333;color:white;padding:12px 18px;border-radius:8px;font-size:14px;box-shadow:0 4px 15px #0003;z-index:5}
+.toast.show{display:block}
+.resetline{text-align:right;margin:4px 2px 12px}
+.resetline button{border:0;background:transparent;color:#888;text-decoration:underline;cursor:pointer;font-size:12px}
+@media(min-width:650px){.wrap{max-width:620px}.brand{font-size:23px}}
+@media(max-width:420px){.wrap{padding:0 10px}.card{padding:14px 12px}th{width:30%;font-size:12px}td{font-size:13px}.row-fields{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header class="top"><span>(인천) 돌봄서비스 | [돌봄실습]</span><span class="hamb">☰</span></header>
+<main class="wrap">
+  <div class="brand">Dash Board</div>
+  <section class="card">
+    <h2>최근 돌봄활동 시간</h2>
+    <div style="height:58px;background:var(--purple);border-radius:3px;display:flex;align-items:center;justify-content:center;color:white;font-size:13px">실습 화면</div>
+    <div style="height:5px;background:#ddd;border-radius:5px;margin-top:7px"><div style="height:5px;width:65%;background:var(--purple);border-radius:5px"></div></div>
+  </section>
+
+  <section class="card" id="planCard">
+    <div class="plan-head"><h2 style="margin:0">금일 서비스 제공 계획</h2></div>
+    <div class="plan-head"><span class="place">인천</span><button class="small-btn" id="detailBtn" disabled>상세보기</button></div>
+    <table>
+      <tr><th>돌보미</th><td>윤돌봄</td></tr>
+      <tr><th>이용자</th><td>김아동</td></tr>
+      <tr><th>활동장소</th><td id="placeSummary">-</td></tr>
+      <tr><th>서비스내용</th><td id="serviceSummary">-</td></tr>
+      <tr><th>서비스상태</th><td><div class="status-cell"><span class="status wait" id="statusText">계획</span><button class="primary status-action" id="startBtn">시작</button><button class="primary status-action" id="endBtn" style="display:none">종료</button></div></td></tr>
+    </table>
+    <div class="timebar">서비스 시간</div>
+    <div class="timebox"><span id="startTime">오늘 날짜 14:00</span> ~ <span id="endTime">오늘 날짜 16:00</span></div>
+    <p class="note">※ 시작 → 종료 → 상세보기 → 일지 작성 순서로 실습해 주세요.</p>
+  </section>
+
+  <div class="resetline"><button id="resetBtn">실습 초기화</button></div>
+
+  <section class="card detail-card" id="detailCard">
+    <h2>서비스 제공 일지 작성</h2>
+    <div class="field">
+      <label>✓ 활동 장소</label>
+      <select id="place"><option value="">선택하세요</option><option>이용자가정</option><option>학교</option><option>복지관</option><option>외부활동</option><option>기타</option></select>
+    </div>
+    <div class="field">
+      <label>이용자 확인일시</label>
+      <input id="confirmTime" type="text" placeholder="예: 2026.11.19 09:00">
+    </div>
+    <div class="field">
+      <label>✓ 서비스 내용</label>
+      <select id="service"><option value="">선택하세요</option><option>학습, 놀이</option><option>신변처리</option><option>식사 및 간식 지원</option><option>이동 지원</option><option>기타</option></select>
+    </div>
+    <div class="row-fields">
+      <div class="field"><label>활동 시간</label><input id="duration" value="2시간"></div>
+      <div class="field"><label>분할여부</label><select><option>아니오</option><option>예</option></select></div>
+    </div>
+    <div class="field"><label>휴게 시간</label><input value="0분"></div>
+    <div class="field">
+      <label>✓ 활동 내용</label>
+      <textarea id="activity" placeholder="활동한 내용을 구체적으로 입력해 주세요."></textarea>
+    </div>
+    <div class="field"><label>첨부 파일</label><input type="file" id="attachment"></div>
+    <div class="actions">
+      <button class="primary" id="saveBtn">저장</button>
+      <button class="secondary" id="backBtn">목록</button>
+    </div>
+  </section>
+
+  <section class="card" id="savedCard" style="display:none">
+    <h2>저장된 서비스 제공 일지</h2>
+    <div id="savedContent" style="font-size:14px;line-height:1.8"></div>
+    <div class="actions"><button class="secondary" id="editBtn">수정하기</button><button class="primary" id="finishBtn">실습 완료</button></div>
+  </section>
+</main>
+<div class="toast" id="toast"></div>
+<script>
+const $=id=>document.getElementById(id);
+let started=false, ended=false, startStamp=null, endStamp=null;
+function stamp(d){return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`}
+function say(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200)}
+function updateTimes(){const today=new Date();const date=`${today.getFullYear()}.${String(today.getMonth()+1).padStart(2,'0')}.${String(today.getDate()).padStart(2,'0')}`;$('startTime').textContent=`${date} 14:00`;$('endTime').textContent=`${date} 16:00`}
+updateTimes();
+$('startBtn').addEventListener('click',()=>{
+ if(started)return;started=true;startStamp=stamp(new Date());$('statusText').textContent='진행중';$('statusText').className='status go';
+ $('startBtn').style.display='none';$('endBtn').style.display='inline-block';updateTimes();say('서비스 시작 처리되었습니다.');
+});
+$('endBtn').addEventListener('click',()=>{
+ if(!started||ended)return;ended=true;endStamp=stamp(new Date());$('statusText').textContent='종료';$('statusText').className='status done';
+ $('endBtn').style.display='none';$('detailBtn').disabled=false;updateTimes();say('서비스 종료 처리되었습니다. 상세보기를 눌러 일지를 작성하세요.');
+});
+$('detailBtn').addEventListener('click',()=>{
+ if(!ended){say('먼저 시작과 종료를 진행해 주세요.');return}
+ $('detailCard').classList.add('show');$('savedCard').style.display='none';$('detailCard').scrollIntoView({behavior:'smooth',block:'start'});
+});
+$('backBtn').addEventListener('click',()=>{$('detailCard').classList.remove('show');$('planCard').scrollIntoView({behavior:'smooth'});});
+$('saveBtn').addEventListener('click',()=>{
+ const place=$('place').value, service=$('service').value, activity=$('activity').value.trim();
+ if(!place||!service||!activity){say('활동 장소, 서비스 내용, 활동 내용을 입력해 주세요.');return}
+ $('placeSummary').textContent=place;$('serviceSummary').textContent=service;
+ $('savedContent').innerHTML=`<b>활동 장소</b> ${place}<br><b>서비스 내용</b> ${service}<br><b>활동 시간</b> ${$('duration').value}<br><b>활동 내용</b><br>${activity.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])).replace(/\n/g,'<br>')}`;
+ $('detailCard').classList.remove('show');$('savedCard').style.display='block';$('savedCard').scrollIntoView({behavior:'smooth'});say('일지가 저장되었습니다.');
+});
+$('editBtn').addEventListener('click',()=>{$('savedCard').style.display='none';$('detailCard').classList.add('show');$('detailCard').scrollIntoView({behavior:'smooth'});});
+$('finishBtn').addEventListener('click',()=>say('실습이 완료되었습니다. 다음 면접자를 위해 초기화해 주세요.'));
+$('resetBtn').addEventListener('click',()=>{
+ started=false;ended=false;startStamp=null;endStamp=null;
+ $('statusText').textContent='계획';$('statusText').className='status wait';$('startBtn').style.display='inline-block';$('endBtn').style.display='none';$('endBtn').disabled=false;$('detailBtn').disabled=true;
+ updateTimes();
+ $('placeSummary').textContent='-';$('serviceSummary').textContent='-';$('place').value='';$('service').value='';$('activity').value='';$('confirmTime').value='';$('duration').value='2시간';$('attachment').value='';
+ $('detailCard').classList.remove('show');$('savedCard').style.display='none';say('처음 상태로 초기화되었습니다.');
+});
+</script>
+</body>
+</html>
